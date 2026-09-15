@@ -9,15 +9,6 @@ Herramienta del vídeo de AutoIngenium sobre la estrategia de carga que maximiza
 
 Todo el cálculo se hace en el navegador; no se envía ningún dato. Es una estimación con un modelo publicado, no una predicción para un coche concreto.
 
-## Publicarla en GitHub Pages (cinco minutos)
-
-1. Crea un repositorio público en GitHub (por ejemplo `calculadora-carga-lfp`).
-2. Sube el contenido de esta carpeta tal cual (`index.html`, `README.md`, `LICENSE`, `.nojekyll` y la carpeta `modelo/`). Con la web de GitHub: «Add file → Upload files», arrastra los archivos y pulsa «Commit changes».
-3. En el repositorio, «Settings → Pages → Build and deployment»: *Source* = «Deploy from a branch», *Branch* = `main`, carpeta `/ (root)`. Guarda.
-4. Al cabo de uno o dos minutos la calculadora estará en `https://TU_USUARIO.github.io/calculadora-carga-lfp/`.
-5. En `index.html` hay dos enlaces que conviene actualizar una vez publicado el vídeo: `id="linkVideo"` (URL del vídeo) e `id="linkRepo"` (URL de este repositorio).
-
-También funciona abriendo `index.html` directamente en el navegador, sin servidor.
 
 ## Método
 
