@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora de carga LFP</title>
+<meta name="description" content="A qué porcentaje cargar cada noche una batería LFP para alargar su vida: estrategia personalizada y capacidad estimada a diez años (AutoIngenium).">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #EDEFF2; --card: #FFFFFF; --card2: #F4F6F8; --txt: #171B20; --txt2: #454F59; --muted: #6F7984; --line: #D5DAE0;
+    --amber: #9C6600; --amberT: #7F5300; --amberBg: #FBF3E3; --blue: #2A66B8; --blueT: #24568F; --red: #B23F3F; --green: #2E7D57;
+    --shadow: 0 1px 2px rgba(20, 30, 40, .06), 0 6px 20px rgba(20, 30, 40, .06);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15191E; --card: #1F252C; --card2: #252D36; --txt: #F2F3F5; --txt2: #B4BCC6; --muted: #7D8794; --line: #2C343D;
+      --amber: #C98500; --amberT: #E3A52B; --amberBg: #2B2619; --blue: #3987E5; --blueT: #6FAEF5; --red: #E66767; --green: #5FBF8A;
+      --shadow: none; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15191E; --card: #1F252C; --card2: #252D36; --txt: #F2F3F5; --txt2: #B4BCC6; --muted: #7D8794; --line: #2C343D;
+    --amber: #C98500; --amberT: #E3A52B; --amberBg: #2B2619; --blue: #3987E5; --blueT: #6FAEF5; --red: #E66767; --green: #5FBF8A;
+    --shadow: none; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font-family: "Source Sans 3", Calibri, "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 48px; padding-inline: 20px; }
+  h1, h2, h3, .num { font-family: "Source Serif 4", Cambria, Georgia, "Times New Roman", serif; font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.15; }
+  h2 { font-size: 20px; line-height: 1.25; }
+  h3 { font-size: 16px; line-height: 1.3; }
+  .lead { color: var(--txt2); max-width: 68ch; margin: 10px 0 0; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--amberT); font-weight: 600; }
+  .eyebrow.blue { color: var(--blueT); }
+  .eyebrow.muted { color: var(--muted); }
+  header .brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header .mark { width: 10px; height: 34px; background: var(--amber); border-radius: 2px; }
+  header .links { margin-top: 12px; font-size: 14px; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+  a { color: var(--blueT); }
+  .grid { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 24px; margin-top: 28px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+  form .panel { padding: 18px 18px 6px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 16px; }
+  legend { padding: 0; margin-bottom: 8px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  .row.one { grid-template-columns: 1fr; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--txt2); }
+  label.f span.l { display: flex; justify-content: space-between; gap: 8px; }
+  label.f small { color: var(--muted); font-size: 12px; }
+  input[type="number"], select { width: 100%; font: inherit; font-size: 15px; color: var(--txt); background: var(--card2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font-variant-numeric: tabular-nums; }
+  input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  details.adv { border-top: 1px solid var(--line); margin-top: 6px; padding: 10px 0 8px; }
+  details.adv summary { cursor: pointer; font-size: 14px; color: var(--txt2); font-weight: 600; }
+  details.adv .row { margin-top: 12px; }
+  .note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .results { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .hero { padding: 22px 24px; border-left: 6px solid var(--amber); }
+  .hero .num.big { font-size: clamp(40px, 6vw, 64px); line-height: 1; color: var(--amberT); font-variant-numeric: tabular-nums; }
+  .hero .headline { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+  .hero .headline .txt { font-size: 18px; color: var(--txt); max-width: 40ch; }
+  .steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 22px; margin-top: 20px; }
+  @media (max-width: 640px) { .steps { grid-template-columns: 1fr; } }
+  .step h3 { color: var(--txt); margin-bottom: 4px; }
+  .step p { margin: 0; font-size: 15px; color: var(--txt2); }
+  .step p + p { margin-top: 4px; }
+  .compare { padding: 20px 24px; }
+  .cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+  @media (max-width: 720px) { .cmp { grid-template-columns: 1fr; } }
+  .tile { background: var(--card2); border-radius: 8px; padding: 14px 16px; border-top: 4px solid var(--line); }
+  .tile.blue { border-top-color: var(--blue); }
+  .tile.amber { border-top-color: var(--amber); }
+  .tile .num { font-size: 34px; line-height: 1.1; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .tile.blue .num { color: var(--blueT); }
+  .tile.amber .num { color: var(--amberT); }
+  .tile .sub { font-size: 13px; color: var(--muted); }
+  .tile dl { display: grid; grid-template-columns: auto auto; gap: 2px 10px; margin: 10px 0 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .tile dt { color: var(--muted); } .tile dd { margin: 0; text-align: right; color: var(--txt); }
+  .gain { margin-top: 16px; padding: 12px 16px; background: var(--amberBg); border-radius: 8px; font-size: 15px; }
+  .gain strong { color: var(--amberT); }
+  .chartbox { padding: 20px 24px; }
+  svg text { font-family: "Source Sans 3", Calibri, system-ui, sans-serif; fill: var(--txt2); font-size: 12px; }
+  svg .grid { stroke: var(--line); stroke-width: 1; }
+  svg .axis { stroke: var(--muted); stroke-width: 1; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: var(--txt2); margin-top: 6px; }
+  .legend i { display: inline-block; width: 22px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+  .factors { padding: 20px 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--txt2); font-size: 13px; letter-spacing: .02em; }
+  td.r, th.r { text-align: right; }
+  td.neg { color: var(--green); } td.pos { color: var(--red); }
+  .tablewrap { overflow-x: auto; }
+  .caveats { padding: 20px 24px; font-size: 14px; color: var(--txt2); }
+  .caveats p { margin: 8px 0 0; max-width: 78ch; }
+  .caveats summary { cursor: pointer; font-weight: 600; color: var(--txt); font-family: "Source Serif 4", Cambria, Georgia, serif; font-size: 18px; }
+  footer { margin-top: 36px; font-size: 13px; color: var(--muted); max-width: 80ch; }
+  .badge { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--card2); color: var(--txt2); border: 1px solid var(--line); margin-left: 6px; vertical-align: middle; }
+  .warn { color: var(--red); }
+  @media (prefers-reduced-motion: no-preference) { .tile, .hero { transition: border-color .2s; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="mark"></div><h1>Calculadora de carga LFP</h1></div>
+    <p class="lead">Dime qué coche tienes, cuántos kilómetros haces al día y cómo cargas en casa: te devuelvo a qué porcentaje cargar cada noche, cuándo hacer la carga al 100 % que pide el fabricante, qué hacer con los imprevistos y los viajes, y cuánta capacidad conserva la batería a los diez años frente a dejarla siempre al 100 %. Solo para baterías de ferrofosfato de litio (LFP).</p>
+    <div class="links"><span>AutoIngenium · septiembre de 2026</span><a id="linkVideo" href="https://www.youtube.com/@autoingenium" target="_blank" rel="noopener">Vídeo que explica el método</a><a id="linkRepo" href="https://github.com/" target="_blank" rel="noopener">Código y modelo (GitHub)</a></div>
+  </header>
+
+  <div class="grid">
+    <form id="form" autocomplete="off" onsubmit="return false">
+      <div class="panel">
+        <fieldset>
+          <legend class="eyebrow">Tu coche</legend>
+          <div class="row one">
+            <label class="f"><span class="l">Modelo <small>solo versiones con batería LFP</small></span><select id="coche"></select></label>
+          </div>
+          <div class="row">
+            <label class="f"><span class="l">Batería útil <small>kWh</small></span><input id="kwh" type="number" min="10" max="150" step="0.1"></label>
+            <label class="f"><span class="l">Consumo real <small>kWh/100 km</small></span><input id="consumo" type="number" min="8" max="35" step="0.1"></label>
+          </div>
+          <p class="note" id="notaCoche"></p>
+        </fieldset>
+        <fieldset>
+          <legend class="eyebrow">Tu uso</legend>
+          <div class="row">
+            <label class="f"><span class="l">Km por día, lunes a viernes</span><input id="kmSemana" type="number" min="0" max="600" step="1" value="70"></label>
+            <label class="f"><span class="l">Km por día, fin de semana</span><input id="kmFinde" type="number" min="0" max="600" step="1" value="70"></label>
+          </div>
+          <div class="row">
+            <label class="f"><span class="l">Imprevistos al mes <small>días con muchos más km</small></span><input id="imprevistos" type="number" min="0" max="20" step="0.5" value="1"></label>
+            <label class="f"><span class="l">Margen de seguridad <small>puntos de batería</small></span><input id="margen" type="number" min="5" max="50" step="5" value="20"></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend class="eyebrow">Tu carga en casa</legend>
+          <div class="row">
+            <label class="f"><span class="l">Potencia del cargador</span><select id="potencia">
+              <option value="2.3">2,3 kW (enchufe doméstico)</option>
+              <option value="3.7">3,7 kW (16 A monofásico)</option>
+              <option value="7.4" selected>7,4 kW (32 A monofásico)</option>
+              <option value="11">11 kW (trifásico)</option>
+            </select></label>
+            <label class="f"><span class="l">Carga al 100 % de calibración</span><select id="calibracion">
+              <option value="1">Cada semana</option>
+              <option value="2">Cada dos semanas</option>
+              <option value="4">Cada mes</option>
+              <option value="0">Nunca</option>
+            </select></label>
+          </div>
+          <div class="row">
+            <label class="f"><span class="l">Hora de llegar a casa</span><input id="hLlegada" type="number" min="12" max="23" step="1" value="18"></label>
+            <label class="f"><span class="l">Hora de salir por la mañana</span><input id="hSalida" type="number" min="4" max="11" step="1" value="8"></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend class="eyebrow">Dónde vive el coche</legend>
+          <div class="row">
+            <label class="f"><span class="l">Clima <small>medias mensuales AEMET</small></span><select id="clima"></select></label>
+            <label class="f"><span class="l">Ajuste de temperatura <small>°C, garaje o sol</small></span><input id="ajusteT" type="number" min="-5" max="8" step="1" value="0"></label>
+          </div>
+        </fieldset>
+        <details class="adv">
+          <summary>Precios y método</summary>
+          <div class="row">
+            <label class="f"><span class="l">Electricidad en casa <small>€/kWh</small></span><input id="precioCasa" type="number" min="0" max="1" step="0.01" value="0.12"></label>
+            <label class="f"><span class="l">Carga rápida <small>€/kWh</small></span><input id="precioRapida" type="number" min="0" max="2" step="0.01" value="0.40"></label>
+          </div>
+          <div class="row">
+            <label class="f"><span class="l">Escala del modelo</span><select id="escala">
+              <option value="0.7" selected>Ajustada a flotas (×0,7)</option>
+              <option value="1">Celda de laboratorio (×1)</option>
+            </select></label>
+            <label class="f"><span class="l">Penalización del extremo alto</span><select id="variante">
+              <option value="naumann" selected>Central (Naumann)</option>
+              <option value="alta">Alta (Keil, Yang)</option>
+            </select></label>
+          </div>
+          <p class="note">El modelo de celda (Naumann 2018 y 2020, TUM) sobrestima la escala absoluta de las celdas LFP actuales: los Model 3 LFP suecos con más de 100.000 km conservan el 93,3 % (Carla/AVILOO, 2026), frente a un 90–91 % del modelo sin ajustar. El factor 0,7 corrige la escala; las proporciones entre estrategias no cambian.</p>
+        </details>
+      </div>
+    </form>
+
+    <section class="results" aria-live="polite">
+      <div class="panel hero">
+        <div class="eyebrow">Tu estrategia</div>
+        <div class="headline"><div class="num big" id="objetivoTxt">50 %</div><div class="txt" id="objetivoSub"></div></div>
+        <div class="steps">
+          <div class="step"><h3>Cómo hacerlo</h3><p id="como"></p></div>
+          <div class="step"><h3>La carga al 100 % de calibración</h3><p id="calib"></p></div>
+          <div class="step"><h3>Imprevistos</h3><p id="imprev"></p></div>
+          <div class="step"><h3>Viaje largo</h3><p id="viaje"></p></div>
+        </div>
+      </div>
+
+      <div class="panel compare">
+        <div class="eyebrow muted">Cuánto ganas · capacidad restante a los diez años</div>
+        <div class="cmp">
+          <div class="tile blue"><div class="sub">Siempre al 100 %, al enchufar</div><div class="num" id="capA">—</div><dl><dt>Al 80 % de salud</dt><dd id="a80A"></dd><dt>Kilómetros</dt><dd id="kmA"></dd><dt>A los 15 años</dt><dd id="c15A"></dd></dl></div>
+          <div class="tile"><div class="sub">Límite del 80 %, nada más enchufar, misma calibración</div><div class="num" id="capB">—</div><dl><dt>Al 80 % de salud</dt><dd id="a80B"></dd><dt>Kilómetros</dt><dd id="kmB"></dd><dt>A los 15 años</dt><dd id="c15B"></dd></dl></div>
+          <div class="tile amber"><div class="sub" id="tituloRec">Tu estrategia</div><div class="num" id="capR">—</div><dl><dt>Al 80 % de salud</dt><dd id="a80R"></dd><dt>Kilómetros</dt><dd id="kmR"></dd><dt>A los 15 años</dt><dd id="c15R"></dd></dl></div>
+        </div>
+        <div class="gain" id="ganancia"></div>
+      </div>
+
+      <div class="panel chartbox">
+        <div class="eyebrow muted">Capacidad a lo largo de quince años</div>
+        <svg id="chart" viewBox="0 0 720 320" width="100%" role="img" aria-label="Capacidad restante de la batería a lo largo de quince años según la estrategia"></svg>
+        <div class="legend"><span><i style="background:var(--blue)"></i>Siempre al 100 %, al enchufar</span><span><i style="background:var(--muted)"></i>Límite del 80 %, nada más enchufar</span><span><i style="background:var(--amber)"></i>Tu estrategia</span></div>
+      </div>
+
+      <div class="panel factors">
+        <div class="eyebrow muted">Qué pesa cada decisión · puntos de capacidad a los diez años</div>
+        <div class="tablewrap"><table id="tabla"><thead><tr><th>Régimen</th><th class="r">Pérdida</th><th class="r">Reposo</th><th class="r">Uso</th><th class="r">Diferencia con la fila anterior</th></tr></thead><tbody></tbody></table></div>
+        <p class="note" id="notaFactores"></p>
+      </div>
+
+      <details class="panel caveats">
+        <summary>Método, fuentes y cautelas</summary>
+        <p><strong>Modelo.</strong> Envejecimiento en reposo y en uso de una celda comercial LFP/grafito según Naumann, Schimpe, Keil, Hesse y Jossen (2018, <em>J. Energy Storage</em> 17, 153) y Naumann, Spingler y Jossen (2020, <em>J. Power Sources</em> 451, 227666), con los parámetros publicados (verificados en SimSES, TUM). El reposo depende del estado de carga, de la temperatura y de la raíz cuadrada del tiempo; el uso, de la profundidad de los ciclos, de la corriente y de la raíz cuadrada de los ciclos completos equivalentes. La simulación recorre hora a hora una semana tipo con tu horario y la repite durante quince años con la temperatura media de cada mes (AEMET, valores normales 1981–2010) como temperatura de la batería.</p>
+        <p><strong>Escala.</strong> La celda ensayada (Sony US26650, 2015) envejece en reposo más deprisa que las celdas prismáticas LFP actuales: por eso el resultado se multiplica por 0,7 por defecto, factor deducido de los Model 3 LFP suecos con más de 100.000 km analizados por Carla con la herramienta AVILOO (93,3 % de salud, julio de 2026). Lo robusto son las diferencias entre estrategias, no las cifras absolutas.</p>
+        <p><strong>Penalización alta.</strong> El modelo central sube suavemente por encima del 70 %; los ensayos de Keil et al. (2016) y de Yang et al. (2025) miden una penalización mayor del extremo alto (el doble o más entre el 100 % y el 50 %). La opción «alta» la recoge y da la cota superior de lo que se gana.</p>
+        <p><strong>Lo que no recoge.</strong> El daño adicional de ciclar dentro de la ventana 75–100 % medido por Zsoldos, Thompson, Black, Azam y Dahn (2024); el codo final de la curva de envejecimiento, que la raíz cuadrada del tiempo no reproduce; la refrigeración activa del paquete; el depósito de litio metálico al cargar rápido en frío. Las «décimas» de las cargas rápidas puntuales suponen carga a 1,5 C con la batería atemperada.</p>
+        <p><strong>La carga al 100 % de calibración.</strong> El sistema de gestión de una batería LFP no puede leer el estado de carga en la tensión, casi plana, y necesita ver el 100 % de vez en cuando para reiniciar el recuento y equilibrar las celdas. Tesla pedía en sus manuales de 2021 a 2023 una carga completa al menos una vez por semana; Ford, una vez al mes. Sigue lo que diga el manual de tu coche; lo que esta calculadora optimiza es cuándo hacerla.</p>
+        <p><strong>Datos de los coches.</strong> Capacidades útiles y consumos reales tomados de EV Database y de la prensa especializada en septiembre de 2026; son aproximados y puedes editarlos. Tesla no publica la capacidad de sus baterías.</p>
+      </details>
+    </section>
+  </div>
+
+  <footer>Calculadora de AutoIngenium, sin patrocinio ni relación con ningún fabricante. El resultado es una estimación con un modelo publicado y no una predicción para un coche concreto. Los cálculos se hacen en tu navegador; no se envía ningún dato.</footer>
+</div>
+
+<script>// Modelo de envejecimiento LFP (Naumann 2018/2020) — versión JavaScript idéntica a modelo_lfp.py
+// Se valida contra la versión Python con validar.js.
+(function (root) {
+  const R = 8.314, K_REF = 1.2571e-5, EA = 17126.0;
+  const DIAS_MES = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const CLIMAS = {
+    "A Coruña": [10.8, 11.1, 12.4, 13.0, 15.0, 17.4, 19.0, 19.6, 18.6, 16.1, 13.3, 11.5],
+    "Santander": [9.7, 9.8, 11.3, 12.4, 15.1, 17.8, 19.8, 20.3, 18.6, 16.1, 12.5, 10.5],
+    "Oviedo": [8.3, 8.7, 10.5, 11.3, 13.9, 16.7, 18.7, 19.1, 17.6, 14.6, 10.9, 8.9],
+    "Bilbao": [9.3, 9.7, 11.5, 12.6, 15.7, 18.4, 20.4, 20.9, 19.2, 16.4, 12.4, 9.9],
+    "León": [3.2, 4.7, 7.6, 9.0, 12.6, 17.1, 19.8, 19.6, 16.5, 11.7, 7.0, 4.2],
+    "Valladolid": [4.2, 5.9, 9.0, 10.7, 14.5, 19.3, 22.3, 22.1, 18.5, 13.2, 7.9, 5.0],
+    "Madrid": [6.3, 7.9, 11.2, 12.9, 16.7, 22.2, 25.6, 25.1, 20.9, 15.1, 9.9, 6.9],
+    "Zaragoza": [6.6, 8.2, 11.6, 13.8, 18.0, 22.6, 25.3, 25.0, 21.2, 16.2, 10.6, 7.0],
+    "Barcelona": [9.2, 9.9, 11.8, 13.7, 16.9, 20.9, 23.9, 24.4, 21.7, 17.8, 13.0, 10.0],
+    "Valencia": [11.8, 12.5, 14.4, 16.2, 19.0, 22.9, 25.6, 26.1, 23.5, 19.7, 15.3, 12.6],
+    "Palma": [9.5, 9.8, 11.3, 13.6, 17.5, 21.7, 24.8, 25.1, 22.2, 18.5, 13.7, 10.8],
+    "Murcia": [10.6, 12.2, 14.3, 16.5, 20.0, 24.2, 27.2, 27.6, 24.2, 19.8, 14.6, 11.5],
+    "Málaga": [12.1, 12.9, 14.7, 16.3, 19.3, 23.0, 25.5, 26.0, 23.5, 19.5, 15.7, 13.2],
+    "Sevilla": [10.9, 12.5, 15.6, 17.3, 20.7, 25.1, 28.2, 27.9, 25.0, 20.2, 15.1, 11.9],
+    "Tenerife": [18.2, 18.3, 19.0, 19.7, 21.0, 22.9, 25.0, 25.5, 24.9, 23.4, 21.3, 19.4],
+    "25 °C constante": [25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25],
+  };
+
+  function kSocNaumann(s) { return 2.8575 * Math.pow(s - 0.5, 3) + 0.60225; }
+  function kSoc(s, variante) {
+    let k = kSocNaumann(s);
+    if (variante === "alta" && s > 0.7) {
+      const k50 = kSocNaumann(0.5), k70 = kSocNaumann(0.7);
+      k = k70 + (s - 0.7) / 0.3 * (2.2 * k50 - k70);
+    }
+    return k;
+  }
+  function kCal(s, TC, variante) {
+    const T = TC + 273.15;
+    return K_REF * Math.exp(-EA / R * (1 / T - 1 / 298.15)) * kSoc(s, variante);
+  }
+  function kCyc(c, dod) { return (0.0630 * c + 0.0971) * (4.0253 * Math.pow(dod - 0.6, 3) + 1.0923) / 100; }
+
+  function temperaturaHoraria(clima, offset) {
+    const temps = CLIMAS[clima];
+    const out = new Float64Array(8760);
+    let i = 0;
+    for (let m = 0; m < 12; m++) for (let h = 0; h < 24 * DIAS_MES[m]; h++) out[i++] = temps[m] + (offset || 0);
+    return out;
+  }
+
+  // Simulación horaria de la semana (idéntica a simular_semana)
+  function simularSemana(p) {
+    const kwh = p.kwh, cons = p.consumo_kwh_km, km = p.km_semana, objetivo = p.objetivo;
+    const ef = p.eficiencia == null ? 0.9 : p.eficiencia;
+    const hS = p.h_salida == null ? 8 : p.h_salida, hR = p.h_regreso == null ? 18 : p.h_regreso, hE = p.h_enchufe == null ? 19 : p.h_enchufe;
+    const programada = !!p.programada, cadaN = p.cada_n_dias || 1;
+    const diaCal = (p.dia_calibracion == null) ? null : p.dia_calibracion;
+    const objCal = p.objetivo_calibracion == null ? 1.0 : p.objetivo_calibracion;
+    const reserva = p.reserva_min == null ? 0.05 : p.reserva_min;
+    const k = p.cada_k_semanas || 1;
+    const semanas = Math.max(p.semanas || 4, 3 * k);
+    const pBat = p.potencia_kw * ef / kwh;
+    const n = 168 * semanas, nUlt = 168 * k;
+    const soc = new Float64Array(n);
+    let s = objetivo, carga = null, fec = 0;
+    const dods = [];
+    for (let t = 0; t < n; t++) {
+      const d = Math.floor(t / 24) % 7, w = Math.floor(t / 168), h = t % 24;
+      const uso = km[d] * cons / kwh;
+      if (h === hS) { s = Math.max(s - uso * 0.55, reserva); if (t >= n - nUlt) fec += uso * 0.55; }
+      if (h === hR) { s = Math.max(s - uso * 0.45, reserva); if (t >= n - nUlt) fec += uso * 0.45; }
+      if (h === hE) {
+        let diaCarga = (d % cadaN === 0), obj = objetivo, prog = programada;
+        if (diaCal !== null && d === diaCal && (w % k === k - 1)) { diaCarga = true; obj = objCal; prog = true; }
+        if (diaCarga && obj > s + 1e-9) {
+          const horas = (obj - s) / pBat;
+          let ini;
+          if (prog) { const fin = t + (24 - hE) + hS; ini = Math.max(t, fin - horas); } else ini = t;
+          carga = [obj, ini];
+          if (t >= n - nUlt) dods.push(obj - s);
+        }
+      }
+      if (carga !== null) {
+        const obj = carga[0], ini = carga[1];
+        if (t + 1 > ini) {
+          const paso = pBat * Math.min(1, t + 1 - ini);
+          s = Math.min(obj, s + paso);
+          if (s >= obj - 1e-9) carga = null;
+        }
+      }
+      soc[t] = s;
+    }
+    return { soc: soc.slice(n - nUlt), fec: fec, dods: dods };
+  }
+
+  function simular(p) {
+    const anos = p.anos || 15;
+    const sem = simularSemana(p);
+    const socSem = sem.soc, nUlt = socSem.length;
+    const k = p.cada_k_semanas || 1;
+    const T = temperaturaHoraria(p.clima, p.offset_T || 0);
+    const nH = 8760;
+    const socH = new Float64Array(nH);
+    for (let h = 0; h < nH; h++) socH[h] = socSem[h % nUlt];
+    if (p.dias_100_ano > 0) {
+      const paso = Math.floor(365 / p.dias_100_ano);
+      for (let j = 0; j < p.dias_100_ano; j++) for (let h = j * paso * 24; h < (j * paso + 1) * 24; h++) socH[h] = 1.0;
+    }
+    const fecAno = sem.fec * 365 / (7 * k);
+    const cargasMes = p.cargas_rapidas_mes || 0;
+    const fecRap = p.fec_carga_rapida == null ? 0.6 : p.fec_carga_rapida;
+    const cRap = p.c_rapida == null ? 1.5 : p.c_rapida, cLenta = p.c_lenta == null ? 0.15 : p.c_lenta;
+    const fecRapAno = cargasMes * 12 * fecRap;
+    let dod;
+    if (sem.dods.length) { let sw = 0, sww = 0; for (const x of sem.dods) { sw += x * x; sww += x; } dod = sw / sww; }
+    else dod = Math.max.apply(null, p.km_semana) * p.consumo_kwh_km / p.kwh;
+    const fecTot = fecAno + fecRapAno;
+    const cEff = fecTot > 0 ? (fecAno * cLenta + fecRapAno * cRap) / fecTot : cLenta;
+    const kc = kCyc(cEff, dod);
+    const ks = new Float64Array(nH);
+    for (let h = 0; h < nH; h++) ks[h] = kCal(socH[h], T[h], p.variante || "naumann");
+    const res = { anos: [], total: [], cal: [], cyc: [] };
+    let Q = 0;
+    for (let a = 1; a <= anos; a++) {
+      for (let h = 0; h < nH; h++) {
+        const kk = ks[h];
+        const tv = Q > 0 ? (Q / kk) * (Q / kk) : 0;
+        Q = kk * Math.sqrt(tv + 3600);
+      }
+      const Qc = kc * Math.sqrt(fecTot * a);
+      res.anos.push(a); res.cal.push(Q); res.cyc.push(Qc); res.total.push(Q + Qc);
+    }
+    let sm = 0, h95 = 0, h80 = 0, smin = 1;
+    for (let h = 0; h < nH; h++) sm += socH[h];
+    for (let h = 0; h < nUlt; h++) { if (socSem[h] >= 0.95) h95++; if (socSem[h] >= 0.80) h80++; if (socSem[h] < smin) smin = socSem[h]; }
+    res.soc_medio = sm / nH; res.h_sem_95 = h95 / k; res.h_sem_80 = h80 / k; res.soc_min = smin;
+    res.dod = dod; res.fec_ano = fecAno; res.fec_rapida_ano = fecRapAno; res.c_eff = cEff;
+    res.soc_semana = Array.from(socSem);
+    return res;
+  }
+
+  function anosHasta(total, umbral) {
+    const n = total.length;
+    if (total[n - 1] < umbral) return n * Math.pow(umbral / total[n - 1], 2);
+    let i = 0; while (i < n && total[i] < umbral) i++;
+    if (i === 0) return umbral / total[0];
+    return i + (umbral - total[i - 1]) / (total[i] - total[i - 1]);
+  }
+
+  const api = { CLIMAS, kSoc, kCal, kCyc, simularSemana, simular, anosHasta, EA, R };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.ModeloLFP = api;
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+(function () {
+  const M = window.ModeloLFP;
+  // ---------- Coches (capacidad útil, consumo real medio, potencia DC, minutos 10–80 %, límite en el coche, calibración del manual) ----------
+  const COCHES = [
+    { id: "m3", n: "Tesla Model 3 Standard / RWD (LFP, 2021–2026)", kwh: 60, cons: 13.5, dc: 175, min1080: 24, lim: "tesla", cal: 1, nota: "Tesla no publica la capacidad; ≈ 60 kWh útiles según EV Database. El selector de carga no baja del 50 %." },
+    { id: "my", n: "Tesla Model Y Standard / RWD (LFP)", kwh: 60, cons: 15.5, dc: 175, min1080: 25, lim: "tesla", cal: 1, nota: "≈ 60 kWh útiles; el selector de carga no baja del 50 %." },
+    { id: "surf30", n: "BYD Dolphin Surf 30 kWh Active", kwh: 30, cons: 13.8, dc: 65, min1080: 29, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga (Carga inteligente) o se limita en el cargador." },
+    { id: "surf43", n: "BYD Dolphin Surf 43,2 kWh Boost / Comfort", kwh: 43.2, cons: 14.5, dc: 85, min1080: 32, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "dolphin45", n: "BYD Dolphin 44,9 kWh", kwh: 44.9, cons: 15.5, dc: 65, min1080: 33, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "dolphin60", n: "BYD Dolphin 60,4 kWh", kwh: 60.4, cons: 15.5, dc: 88, min1080: 36, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "atto2", n: "BYD Atto 2 45,1 kWh", kwh: 45.1, cons: 16.0, dc: 65, min1080: 37, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "atto2c", n: "BYD Atto 2 Comfort 64,8 kWh", kwh: 64.8, cons: 16.5, dc: 155, min1080: 25, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "atto3", n: "BYD Atto 3 60,5 kWh", kwh: 60.5, cons: 17.0, dc: 88, min1080: 37, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "seal61", n: "BYD Seal 61,4 kWh", kwh: 61.4, cons: 15.5, dc: 110, min1080: 30, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "seal82", n: "BYD Seal 82,5 kWh", kwh: 82.5, cons: 16.0, dc: 150, min1080: 30, lim: "horas", cal: 4, nota: "BYD no permite fijar un límite de carga: se programa la duración de la carga o se limita en el cargador." },
+    { id: "mg4", n: "MG4 Standard 51 kWh (LFP)", kwh: 49, cons: 15.5, dc: 88, min1080: 35, lim: "horas", cal: 4, nota: "En la versión Standard el selector de límite no actúa: se programa la duración de la carga o se limita en el cargador." },
+    { id: "mgzs", n: "MG ZS EV Standard 51 kWh (LFP)", kwh: 49, cons: 17.0, dc: 92, min1080: 36, lim: "coche", cal: 4, nota: "Capacidad útil aproximada." },
+    { id: "ec3", n: "Citroën ë-C3 / Fiat Grande Panda / Opel Frontera 44 kWh", kwh: 44, cons: 15.0, dc: 100, min1080: 26, lim: "coche", cal: 4, nota: "Misma batería LFP de 44 kWh en los tres modelos de Stellantis." },
+    { id: "spring", n: "Dacia Spring 26,8 kWh", kwh: 25, cons: 13.0, dc: 30, min1080: 45, lim: "coche", cal: 4, nota: "≈ 25 kWh útiles." },
+    { id: "twingo", n: "Renault Twingo E-Tech 27,5 kWh (2026)", kwh: 27.5, cons: 13.0, dc: 50, min1080: 30, lim: "coche", cal: 4, nota: "Batería LFP de 27,5 kWh." },
+    { id: "t03", n: "Leapmotor T03 37,3 kWh", kwh: 36, cons: 14.0, dc: 48, min1080: 36, lim: "coche", cal: 4, nota: "Capacidad útil aproximada." },
+    { id: "b10", n: "Leapmotor B10 56,2 / 67,1 kWh", kwh: 56.2, cons: 18.0, dc: 168, min1080: 20, lim: "coche", cal: 4, nota: "Elige la capacidad de tu versión." },
+    { id: "ex30", n: "Volvo EX30 Single Motor 51 kWh (LFP)", kwh: 49, cons: 16.5, dc: 134, min1080: 27, lim: "coche", cal: 4, nota: "Capacidad útil aproximada." },
+    { id: "smart1", n: "Smart #1 Pro 49 kWh (LFP)", kwh: 47, cons: 17.5, dc: 130, min1080: 30, lim: "coche", cal: 4, nota: "Capacidad útil aproximada." },
+    { id: "s05", n: "Changan Deepal S05 68,8 kWh", kwh: 68, cons: 17.7, dc: 200, min1080: 23, lim: "coche", cal: 4, nota: "" },
+    { id: "mache", n: "Ford Mustang Mach-E Standard Range (LFP)", kwh: 70, cons: 18.5, dc: 150, min1080: 33, lim: "coche", cal: 4, nota: "Ford recomienda una carga al 100 % al menos una vez al mes." },
+    { id: "g6", n: "Xpeng G6 RWD Standard 66 kWh", kwh: 66, cons: 17.0, dc: 215, min1080: 20, lim: "coche", cal: 4, nota: "" },
+    { id: "otro", n: "Otro coche con batería LFP (introduce los datos)", kwh: 50, cons: 15.0, dc: 100, min1080: 30, lim: "coche", cal: 4, nota: "Introduce la capacidad útil y tu consumo real. Consulta en el manual la frecuencia de la carga al 100 %." },
+  ];
+  const $ = (id) => document.getElementById(id);
+  const fmt = (x, d) => x.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const pct = (x, d) => fmt(x * 100, d == null ? 1 : d) + " %";
+  const hora = (h) => { h = ((h % 24) + 24) % 24; const hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `${hh}:${mm < 10 ? "0" : ""}${mm}`; };
+
+  // ---------- poblar selects ----------
+  const selCoche = $("coche");
+  COCHES.forEach(c => { const o = document.createElement("option"); o.value = c.id; o.textContent = c.n; selCoche.appendChild(o); });
+  const selClima = $("clima");
+  Object.keys(M.CLIMAS).forEach(k => { const o = document.createElement("option"); o.value = k; o.textContent = k; selClima.appendChild(o); });
+  selClima.value = "Madrid";
+
+  const IDS = ["coche", "kwh", "consumo", "kmSemana", "kmFinde", "imprevistos", "margen", "potencia", "calibracion", "hLlegada", "hSalida", "clima", "ajusteT", "precioCasa", "precioRapida", "escala", "variante"];
+  function cargarCoche() {
+    const c = COCHES.find(x => x.id === selCoche.value) || COCHES[0];
+    $("kwh").value = c.kwh; $("consumo").value = c.cons; $("calibracion").value = String(c.cal);
+    $("notaCoche").textContent = c.nota || "";
+  }
+  function leer() {
+    const v = {}; IDS.forEach(id => v[id] = $(id).value);
+    const c = COCHES.find(x => x.id === v.coche) || COCHES[0];
+    return {
+      coche: c, kwh: +v.kwh || c.kwh, cons: (+v.consumo || c.cons) / 100, kmWd: +v.kmSemana || 0, kmWe: +v.kmFinde || 0,
+      imprevistos: +v.imprevistos || 0, margen: (+v.margen || 20) / 100, P: +v.potencia, calK: +v.calibracion,
+      hLleg: Math.min(23, Math.max(12, Math.round(+v.hLlegada))), hSal: Math.min(11, Math.max(4, Math.round(+v.hSalida))),
+      clima: v.clima, offT: +v.ajusteT || 0, pCasa: +v.precioCasa, pRap: +v.precioRapida, escala: +v.escala, variante: v.variante,
+    };
+  }
+  function guardar() { try { const v = {}; IDS.forEach(id => v[id] = $(id).value); localStorage.setItem("calc-lfp", JSON.stringify(v)); } catch (e) { } }
+  function restaurar() { try { const v = JSON.parse(localStorage.getItem("calc-lfp") || "null"); if (!v) return false; IDS.forEach(id => { if (v[id] != null) $(id).value = v[id]; }); return true; } catch (e) { return false; } }
+
+  // ---------- cálculo ----------
+  function calcular() {
+    const u = leer();
+    const km = [u.kmWd, u.kmWd, u.kmWd, u.kmWd, u.kmWd, u.kmWe, u.kmWe];
+    const hE = Math.min(23, u.hLleg + 1);
+    const base = { kwh: u.kwh, consumo_kwh_km: u.cons, km_semana: km, potencia_kw: u.P, clima: u.clima, offset_T: u.offT, anos: 15, variante: u.variante, h_regreso: u.hLleg, h_enchufe: hE, h_salida: u.hSal };
+    const needWd = u.kmWd * u.cons / u.kwh, needWe = u.kmWe * u.cons / u.kwh, needMax = Math.max(needWd, needWe);
+    // objetivo recomendado
+    let obj = Math.ceil((needMax + u.margen) / 0.05 - 1e-9) * 0.05;
+    const minLim = u.coche.lim === "tesla" ? 0.5 : 0.3;
+    let avisoUso = "";
+    if (obj < minLim) obj = minLim;
+    if (obj > 0.95) { obj = 1.0; }
+    if (needMax + 0.1 > 1) avisoUso = "Tu uso diario consume casi toda la batería: necesitarás cargar también fuera de casa.";
+    obj = Math.round(obj * 100) / 100;
+    // día de calibración: la noche anterior al día de más kilómetros (índice 0 = lunes)
+    const diaCal = (u.kmWe > u.kmWd) ? 4 : 6;
+    const calK = u.calK; // 0 = nunca
+    const regA = M.simular({ ...base, objetivo: 1.0 });
+    const regA2 = M.simular({ ...base, objetivo: 1.0, programada: true });
+    const regB = M.simular({ ...base, objetivo: 0.8, dia_calibracion: calK ? diaCal : null, cada_k_semanas: calK || 1 });
+    const regBsin = M.simular({ ...base, objetivo: 0.8 });
+    const regRsin = M.simular({ ...base, objetivo: obj, programada: true });
+    const regRcal = M.simular({ ...base, objetivo: obj, programada: true, dia_calibracion: calK ? diaCal : null, cada_k_semanas: calK || 1 });
+    const regR = M.simular({ ...base, objetivo: obj, programada: true, dia_calibracion: calK ? diaCal : null, cada_k_semanas: calK || 1, cargas_rapidas_mes: u.imprevistos });
+    const e = u.escala;
+    const kmAno = (5 * u.kmWd + 2 * u.kmWe) * 365 / 7;
+    const cap = (r, y) => 1 - r.total[y - 1] * e;
+    const a80 = (r) => M.anosHasta(r.total.map(x => x * e), 0.2);
+    const esc = (r) => ({ loss10: r.total[9] * e, cal10: r.cal[9] * e, cyc10: r.cyc[9] * e });
+
+    // ---------- estrategia ----------
+    const floorWd = obj - needWd, floorWe = obj - needWe;
+    const rangoTotal = u.kwh / u.cons; // km al 100 %
+    const kmSalida = obj * rangoTotal, kmLlegada = Math.max(0, floorWd) * rangoTotal, kmReserva = Math.max(0, floorWd - 0.10) * rangoTotal;
+    $("objetivoTxt").textContent = obj >= 1 ? "100 %" : Math.round(obj * 100) + " %";
+    $("objetivoSub").textContent = obj >= 1
+      ? `Carga cada noche hasta el 100 %, pero programada para que termine a las ${hora(u.hSal)}: con tu uso no hay margen para un límite inferior.`
+      : `Carga cada noche hasta el ${Math.round(obj * 100)} %. Saldrás de casa con unos ${fmt(kmSalida, 0)} km de autonomía y volverás con el ${Math.round(floorWd * 100)} % (≈ ${fmt(kmLlegada, 0)} km). ${avisoUso}`;
+    const horasDia = needWd * u.kwh / (u.P * 0.9);
+    let como;
+    if (u.coche.lim === "tesla") como = `Fija el límite de carga en el ${Math.round(obj * 100)} % (el selector de Tesla no baja del 50 %) y activa la salida programada a las ${hora(u.hSal)}, para que la carga termine justo antes de salir en lugar de nada más enchufar.`;
+    else if (u.coche.lim === "horas") como = `Tu coche no permite fijar un límite: programa en el coche o en el cargador ${fmt(horasDia, 1)} horas de carga cada noche a ${fmt(u.P, 1)} kW (repone los ${fmt(needWd * u.kwh, 1)} kWh del día), con final a las ${hora(u.hSal)}. La primera semana ajusta la duración hasta que salgas cada mañana con el ${Math.round(obj * 100)} %.`;
+    else como = `Si tu coche permite fijar un límite, ponlo en el ${Math.round(obj * 100)} % con la carga programada para terminar a las ${hora(u.hSal)}. Si no, programa ${fmt(horasDia, 1)} horas de carga cada noche a ${fmt(u.P, 1)} kW (≈ ${fmt(needWd * u.kwh, 1)} kWh) en el cargador o en la app.`;
+    $("como").textContent = como;
+    const costeCal = (esc(regRcal).loss10 - esc(regRsin).loss10) * 100;
+    const nombreCal = calK === 1 ? "cada semana" : calK === 2 ? "cada dos semanas" : calK === 4 ? "cada mes" : "";
+    const diaTxt = diaCal === 4 ? "el viernes por la noche, para salir el sábado" : "el domingo por la noche, para salir el lunes";
+    $("calib").textContent = calK
+      ? `Hazla ${nombreCal}, programada para que termine justo antes de salir y la víspera del día en que más conduces (${diaTxt}): lo que desgasta es el tiempo al 100 %, no llegar a él. Con tu uso, después de esa carga el coche tarda ${fmt(Math.max(1, (1 - obj) / Math.max(needWd, 0.01)), 0)} días en volver a su ventana; por eso te cuesta ${fmt(costeCal, 1)} puntos a los diez años. Si tu indicador se mantiene estable y el manual lo permite, espaciarla ahorra parte de ese coste.`
+      : `Has elegido no hacerla. Tesla pedía en sus manuales una carga completa al menos una vez por semana y Ford una vez al mes: sin ella, el indicador de autonomía de una batería LFP pierde precisión. Haz al menos una antes de cada viaje largo.`;
+    const kwhRap = 0.6 * u.kwh, costeRap = (u.pRap - u.pCasa) * kwhRap, costeAno = costeRap * u.imprevistos * 12;
+    const decimas = (esc(regR).loss10 - esc(regRcal).loss10) * 100;
+    $("imprev").textContent = `Al volver a casa te quedan unos ${fmt(kmReserva, 0)} km antes de bajar del 10 %. Para más, una carga rápida del 20 % al 80 % en tu coche tarda unos ${u.coche.min1080} minutos, añade ${fmt(kwhRap, 0)} kWh y cuesta unos ${fmt(costeRap, 1)} € más que en casa (${fmt(u.pRap, 2)} frente a ${fmt(u.pCasa, 2)} €/kWh). ${u.imprevistos > 0 ? `Con ${u.imprevistos === 1 ? "una carga rápida" : fmt(u.imprevistos, 1) + " cargas rápidas"} al mes son ${fmt(costeAno, 0)} € al año y ${fmt(decimas, 1)} puntos de capacidad a los diez años. Si te ocurre a menudo, sube el límite diario: en batería cuesta décimas y en dinero, nada.` : "Si no las necesitas, no hay coste alguno."}`;
+    const horasViaje = (1 - Math.max(0.05, floorWd)) * u.kwh / (u.P * 0.9), finViaje = hE + horasViaje, limite = 24 + u.hSal;
+    $("viaje").textContent = finViaje <= limite
+      ? `Carga al 100 % la víspera, programada para terminar a las ${hora(u.hSal)}: desde el ${Math.round(floorWd * 100)} % tu cargador de ${fmt(u.P, 1)} kW necesita ${fmt(horasViaje, 1)} horas, así que llega de sobra si enchufas al llegar (a las ${hora(hE)}). Unas horas al 100 % la noche antes de un viaje cuestan décimas; lo que cuesta puntos es el 100 % permanente.`
+      : `Desde el ${Math.round(floorWd * 100)} %, tu cargador de ${fmt(u.P, 1)} kW necesita ${fmt(horasViaje, 1)} horas para llegar al 100 %: enchufando a las ${hora(hE)} no llega antes de las ${hora(u.hSal)} (quedaría en torno al ${Math.round(Math.min(1, floorWd + (limite - hE) * u.P * 0.9 / u.kwh) * 100)} %). Sal con lo que tengas y haz la primera parada en un cargador rápido, o carga al 80 % en uno la víspera; ninguna de las dos cosas cuesta más que décimas.`;
+
+    // ---------- comparación ----------
+    const fill = (suf, r) => { const y = a80(r); $("cap" + suf).textContent = pct(cap(r, 10), 1); $("a80" + suf).textContent = y > 15 ? "más de 15 años" : fmt(y, 0) + " años"; $("km" + suf).textContent = (y > 15 ? "más de " : "") + fmt(Math.min(y, 15) * kmAno / 1000, 0) + " mil km"; $("c15" + suf).textContent = pct(cap(r, 15), 1); };
+    fill("A", regA); fill("B", regB); fill("R", regR);
+    $("tituloRec").textContent = obj >= 1 ? "Al 100 %, programada" + (calK ? "" : "") : `Límite del ${Math.round(obj * 100)} %, programada`;
+    const gan = (esc(regA).loss10 - esc(regR).loss10) * 100, ganB = (esc(regB).loss10 - esc(regR).loss10) * 100;
+    const fraseB = Math.abs(ganB) < 0.15 ? `prácticamente lo mismo que el límite del 80 % (${fmt(Math.abs(ganB), 1)} puntos de diferencia)` : ganB > 0 ? `${fmt(ganB, 1)} puntos más que el límite del 80 %` : `${fmt(-ganB, 1)} puntos menos que el límite del 80 % con la misma calibración: con calibraciones frecuentes, un límite más alto acorta el ciclo profundo que sigue a cada carga completa`;
+    const yMin = Math.min(a80(regA), a80(regR));
+    $("ganancia").innerHTML = `Frente a dejarlo siempre al 100 % nada más enchufar, tu estrategia conserva <strong>${fmt(gan, 1)} puntos más de capacidad</strong> a los diez años (${fmt(kmAno * 10 / 1000, 0)} mil km), y ${fraseB}. En autonomía, ${fmt(gan, 1)} puntos son unos ${fmt(gan / 100 * rangoTotal, 0)} km por carga completa. Entre el 50 % y el 80 % la pérdida apenas cambia con el modelo central; lo que cuesta es el tramo por encima del 80 % y, sobre todo, dormir al 100 %. Escala ${e < 1 ? "ajustada a flotas" : "de celda de laboratorio"}, penalización ${u.variante === "alta" ? "alta" : "central"}; en cualquiera de las tres estrategias la batería tarda ${yMin > 15 ? "más de 15" : fmt(yMin, 0)} años en bajar del 80 % de salud.`;
+
+    // ---------- tabla de factores ----------
+    const filas = [
+      ["Siempre al 100 %, nada más enchufar", regA],
+      ["Siempre al 100 %, programada para terminar al salir", regA2],
+      ["Límite del 80 %, nada más enchufar, sin calibración", regBsin],
+      [`Límite del ${Math.round(obj * 100)} %, programada, sin calibración`, regRsin],
+      [`Límite del ${Math.round(obj * 100)} % con calibración ${nombreCal || "(ninguna)"}`, regRcal],
+      [`Idem con ${u.imprevistos === 1 ? "una carga rápida" : fmt(u.imprevistos, 1) + " cargas rápidas"} al mes (tu estrategia)`, regR],
+    ];
+    const tb = $("tabla").querySelector("tbody"); tb.innerHTML = "";
+    let prev = null;
+    filas.forEach(([n, r]) => {
+      const s = esc(r); const d = prev == null ? null : (s.loss10 - prev) * 100;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${n}</td><td class="r">${fmt(s.loss10 * 100, 1)}</td><td class="r">${fmt(s.cal10 * 100, 1)}</td><td class="r">${fmt(s.cyc10 * 100, 1)}</td><td class="r ${d == null ? "" : d < -0.05 ? "neg" : d > 0.05 ? "pos" : ""}">${d == null ? "—" : (d > 0 ? "+" : "") + fmt(d, 1)}</td>`;
+      tb.appendChild(tr); prev = s.loss10;
+    });
+    $("notaFactores").textContent = `Pérdida de capacidad en puntos porcentuales a los diez años, separada en reposo (tiempo, estado de carga y temperatura) y uso (kilómetros, profundidad de los ciclos y corriente). Los kilómetros son los mismos en todas las filas: ${fmt(kmAno, 0)} al año, ${fmt(regA.fec_ano, 0)} ciclos completos equivalentes. SOC medio: ${Math.round(regA.soc_medio * 100)} % arriba, ${Math.round(regR.soc_medio * 100)} % en tu estrategia; horas por semana al 95 % o más: ${fmt(regA.h_sem_95, 0)} frente a ${fmt(regR.h_sem_95, 0)}.`;
+
+    dibujar([regA, regB, regR], e);
+    guardar();
+  }
+
+  // ---------- gráfico ----------
+  function dibujar(regs, e) {
+    const svg = $("chart"); const W = 720, H = 320, L = 52, Rm = 16, T = 18, B = 40;
+    const x = (a) => L + a / 15 * (W - L - Rm);
+    let ymin = 100; regs.forEach(r => { const v = (1 - r.total[14] * e) * 100; if (v < ymin) ymin = v; });
+    ymin = Math.floor((ymin - 2) / 5) * 5; const ymax = 100;
+    const y = (v) => T + (ymax - v) / (ymax - ymin) * (H - T - B);
+    let s = "";
+    for (let v = ymin; v <= ymax; v += 5) s += `<line class="grid" x1="${L}" x2="${W - Rm}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="${L - 8}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end">${v} %</text>`;
+    for (let a = 0; a <= 15; a += 5) s += `<text x="${x(a).toFixed(1)}" y="${H - B + 20}" text-anchor="middle">${a === 0 ? "hoy" : a + " años"}</text>`;
+    s += `<line class="axis" x1="${L}" x2="${W - Rm}" y1="${y(ymin).toFixed(1)}" y2="${y(ymin).toFixed(1)}"/>`;
+    s += `<line class="grid" x1="${x(10).toFixed(1)}" x2="${x(10).toFixed(1)}" y1="${T}" y2="${y(ymin).toFixed(1)}" stroke-dasharray="4 4"/>`;
+    const cols = ["var(--blue)", "var(--muted)", "var(--amber)"];
+    const labels = [];
+    regs.forEach((r, i) => {
+      let d = `M ${x(0).toFixed(1)} ${y(100).toFixed(1)}`;
+      r.total.forEach((v, k) => { d += ` L ${x(k + 1).toFixed(1)} ${y((1 - v * e) * 100).toFixed(1)}`; });
+      s += `<path d="${d}" fill="none" stroke="${cols[i]}" stroke-width="${i === 2 ? 3.5 : 2.5}" stroke-linejoin="round"/>`;
+      const v10 = (1 - r.total[9] * e) * 100;
+      s += `<circle cx="${x(10).toFixed(1)}" cy="${y(v10).toFixed(1)}" r="4" fill="${cols[i]}"/>`;
+      labels.push({ i, v: v10, yy: y(v10) + 4 });
+    });
+    labels.sort((a, b) => a.yy - b.yy);
+    for (let j = 1; j < labels.length; j++) if (labels[j].yy - labels[j - 1].yy < 15) labels[j].yy = labels[j - 1].yy + 15;
+    labels.forEach(l => { s += `<text x="${(x(10) + 8).toFixed(1)}" y="${l.yy.toFixed(1)}" style="fill:${cols[l.i]};font-weight:600">${l.v.toLocaleString("es-ES", { maximumFractionDigits: 1 })} %</text>`; });
+    svg.innerHTML = s;
+  }
+
+  // ---------- eventos ----------
+  let timer = null;
+  const programar = () => { clearTimeout(timer); timer = setTimeout(calcular, 60); };
+  IDS.forEach(id => $(id).addEventListener("input", programar));
+  IDS.forEach(id => $(id).addEventListener("change", programar));
+  selCoche.addEventListener("change", () => { cargarCoche(); programar(); });
+  if (!restaurar()) cargarCoche();
+  if (!$("kwh").value) cargarCoche();
+  calcular();
+})();
+</script>
+
+</body>
+</html>
